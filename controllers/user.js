@@ -26,7 +26,7 @@ const validatePassword = (password) => {
 exports.signup = (req, res, next) => {
     const { firstName, lastName, email, password } = req.body;
 
-     // Validation du prénom et du nom
+    // Validation du prénom et du nom
     if (firstName.length < 2 || lastName.length < 2) {
         return res.status(400).json({ message: 'Le prénom et le nom doivent contenir au moins 2 caractères' });
     }
@@ -53,7 +53,35 @@ exports.signup = (req, res, next) => {
             });
             // Enregistre l'utilisateur dans la base de données
             user.save()
-                .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
+                .then(() => {
+                    // Envoi de l'e-mail de confirmation de création de compte
+                    const transporter = nodemailer.createTransport({
+                        host: process.env.MAIL_HOST,
+                        port: process.env.MAIL_PORT,
+                        secure: false,
+                        auth: {
+                            user: process.env.MAIL_USER,
+                            pass: process.env.MAIL_PASSWORD,
+                        }
+                    });
+
+                    // Options du courriel
+                    const mailOptions = {
+                        from: process.env.MAIL_FROM_NEW,
+                        to: process.env.MAIL_TO,
+                        subject: 'New registered user',
+                        text: `L'utilisateur ${email} vient de s'inscrire sur la plateforme Feedback.`
+                    };
+
+                    transporter.sendMail(mailOptions, function (error, info) {
+                        if (error) {
+                            console.log(error);
+                            return res.status(500).json({ message: 'Une erreur s\'est produite lors de l\'envoi de l\'e-mail de création du user' });
+                        } else {
+                            return res.status(201).json({ message: 'Utilisateur créé !' });
+                        }
+                    });
+                })
                 .catch(error => res.status(400).json({ error }));
         })
         .catch(error => res.status(500).json({ error }));
@@ -158,13 +186,13 @@ exports.forgotPassword = (req, res) => {
 
             // Options du couéqrriel
             const mailOptions = {
-                from: 'no-reply@feedback.fr',
+                from: process.env.MAIL_FROM_RESET,
                 to: email,
                 subject: 'Lien de réinitialisation du mot de passe',
                 html: `
                     <div style="font-family: Arial, sans-serif; background-color: #282828; padding: 20px;">
                         <div style="background-color: #fff; border-radius: 10px; padding: 20px;">
-                            <img src="http://localhost:3000/logoFeedback.png" alt="Votre Logo" style="float: left; max-width: 200px;">
+                            <img src="${process.env.BASE_URL}/logoFeedback.png" alt="Votre Logo" style="float: left; max-width: 200px;">
                             <h2 style="color: #333; text-align: center; margin-top: 100px; margin-bottom: 30px;">Réinitialisation du mot de passe,</h2>
                             <p style="color: #555; text-align: center;">Cliquez sur le bouton ci-dessous pour procéder à la réinitialisation :</p>
                             <div style="text-align: center; margin-top: 20px;">

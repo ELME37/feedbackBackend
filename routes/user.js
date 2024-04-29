@@ -4,13 +4,15 @@ const express = require('express');
 const router = express.Router();
 // Importe le contrôleur utilisateur
 const userCtrl = require('../controllers/user');
+// Importe le middleware d'authentification
+const auth = require('../middleware/auth');
 
 // Définit les routes pour l'inscription et la connexion des utilisateurs
 // Route GET pour rechercher un utilisateur
 router.get('/:userId', userCtrl.checkUserId);
 
 // Route GET pour vérifier le token
-router.get('/');
+router.get('/', auth, userCtrl.verifyToken);
 
 // Route POST pour l'inscription des utilisateurs
 router.post('/signup', userCtrl.signup);
